@@ -1,0 +1,105 @@
+name: Helm Charts
+
+on:
+  push:
+    branches: ["**"]
+    tags: ["v*"]
+  delete:
+
+jobs:
+  publish:
+    name: Package and push charts
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    permissions:
+      packages: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Compute chart version
+        id: version
+        run: |
+          if [[ "${GITHUB_REF_TYPE}" == "tag" ]]; then
+            # v1.2.3 → 1.2.3
+            VERSION="${GITHUB_REF_NAME#v}"
+          elif [[ "${GITHUB_REF_NAME}" == "main" ]]; then
+            # stable: use version from Chart.yaml (each chart may differ)
+            VERSION=""   # resolved per-chart below
+          else
+            # branch: pre-release semver — sanitise branch name
+            BRANCH="${GITHUB_REF_NAME}"
+            SAFE=$(echo "$BRANCH" | sed 's|/|-|g; s|[^a-zA-Z0-9-]|-|g' | tr '[:upper:]' '[:lower:]' | cut -c1-40)
+            VERSION="0.0.0-${SAFE}"
+          fi
+          echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
+          echo "ref_type=${GITHUB_REF_TYPE}" >> "$GITHUB_OUTPUT"
+          echo "branch=${GITHUB_REF_NAME}" >> "$GITHUB_OUTPUT"
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Package and push all charts
+        run: |
+          VERSION="${{ steps.version.outputs.version }}"
+          REF_TYPE="${{ steps.version.outputs.ref_type }}"
+
+          find . -name "Chart.yaml" -not -path "./.git/*" | while read chart_yaml; do
+            chart_dir="$(dirname "$chart_yaml")"
+            chart_name="$(grep '^name:' "$chart_yaml" | awk '{print $2}')"
+
+            if [[ "$REF_TYPE" == "branch" && "${GITHUB_REF_NAME}" == "main" ]]; then
+              # main: use the version declared in Chart.yaml
+              chart_version="$(grep '^version:' "$chart_yaml" | awk '{print $2}')"
+            else
+              chart_version="$VERSION"
+            fi
+
+            echo "==> Packaging ${chart_name} @ ${chart_version}"
+            helm package "$chart_dir" --version "$chart_version" --destination /tmp/charts/
+
+            echo "==> Pushing ${chart_name} @ ${chart_version} to OCI"
+            helm push "/tmp/charts/${chart_name}-${chart_version}.tgz" \
+              oci://ghcr.io/${{ github.repository_owner }}/helm-charts
+          done
+
+  cleanup:
+    name: Delete branch chart versions
+    if: github.event_name == 'delete' && github.event.ref_type == 'branch'
+    runs-on: ubuntu-latest
+    permissions:
+      packages: write
+
+    steps:
+      - name: Compute version tag for deleted branch
+        id: version
+        run: |
+          BRANCH="${{ github.event.ref }}"
+          SAFE=$(echo "$BRANCH" | sed 's|/|-|g; s|[^a-zA-Z0-9-]|-|g' | tr '[:upper:]' '[:lower:]' | cut -c1-40)
+          echo "version=0.0.0-${SAFE}" >> "$GITHUB_OUTPUT"
+
+      - name: Delete OCI package versions matching the branch
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          ORG: ${{ github.repository_owner }}
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          # List all container packages in the org whose name starts with helm-charts/
+          gh api "orgs/${ORG}/packages?package_type=container&per_page=100" \
+            --jq '.[] | select(.name | startswith("helm-charts/")) | .name' \
+          | while read pkg_name; do
+            encoded="${pkg_name//'/'/'%2F'}"
+
+            # Find versions matching our branch tag
+            gh api "orgs/${ORG}/packages/container/${encoded}/versions?per_page=100" \
+              --jq ".[] | select(.metadata.container.tags[] == \"${VERSION}\") | .id" \
+            | while read version_id; do
+                echo "Deleting ${pkg_name}:${VERSION} (id=${version_id})"
+                gh api --method DELETE \
+                  "orgs/${ORG}/packages/container/${encoded}/versions/${version_id}"
+              done
+          done

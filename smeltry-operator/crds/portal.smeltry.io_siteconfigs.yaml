@@ -1,0 +1,260 @@
+---
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  annotations:
+    controller-gen.kubebuilder.io/version: v0.21.0
+  name: siteconfigs.portal.smeltry.io
+spec:
+  group: portal.smeltry.io
+  names:
+    kind: SiteConfig
+    listKind: SiteConfigList
+    plural: siteconfigs
+    shortNames:
+    - site
+    singular: siteconfig
+  scope: Namespaced
+  versions:
+  - additionalPrinterColumns:
+    - jsonPath: .spec.netbox.provisioningPrefix
+      name: Prefix
+      type: string
+    - jsonPath: .spec.dns.zone
+      name: Zone
+      type: string
+    name: v1alpha1
+    schema:
+      openAPIV3Schema:
+        description: |-
+          SiteConfig is the Schema for the siteconfigs API.
+          Defined by admins in portal-system. Validated by an admission webhook.
+        properties:
+          apiVersion:
+            description: |-
+              APIVersion defines the versioned schema of this representation of an object.
+              Servers should convert recognized schemas to the latest internal value, and
+              may reject unrecognized values.
+              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources
+            type: string
+          kind:
+            description: |-
+              Kind is a string value representing the REST resource this object represents.
+              Servers may infer this from the endpoint the client submits requests to.
+              Cannot be updated.
+              In CamelCase.
+              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
+            type: string
+          metadata:
+            type: object
+          spec:
+            description: SiteConfigSpec defines the desired state of SiteConfig.
+            properties:
+              cilium:
+                description: SiteCiliumConfig holds Cilium-specific parameters for
+                  a site.
+                properties:
+                  l2PoolName:
+                    description: |-
+                      L2PoolName is the name of the CiliumLoadBalancerIPPool on the management cluster.
+                      Used for both the control plane Service and the tenant ingress Service.
+                    type: string
+                required:
+                - l2PoolName
+                type: object
+              dns:
+                description: SiteDNSConfig holds DNS parameters for a site.
+                properties:
+                  zone:
+                    description: |-
+                      Zone is the DNS zone managed by CoreDNS + Netbox IPAM.
+                      Control plane: <cluster>-api.<tenant>.<zone>
+                      Webhook:       <cluster>-wh.<tenant>.<zone>
+                    type: string
+                required:
+                - zone
+                type: object
+              netbox:
+                description: SiteNetboxConfig holds Netbox-specific parameters for
+                  a site.
+                properties:
+                  ipamTags:
+                    description: IPAMTags are Netbox tags applied to every IP reserved
+                      by the operator.
+                    items:
+                      type: string
+                    type: array
+                  provisioningPrefix:
+                    description: |-
+                      ProvisioningPrefix is the IPAM prefix from which IPs are allocated.
+                      Example: "10.0.1.0/24"
+                    type: string
+                  siteSlug:
+                    description: SiteSlug is the Netbox site slug (e.g. "paris-dc1").
+                    type: string
+                required:
+                - provisioningPrefix
+                - siteSlug
+                type: object
+              network:
+                description: SiteNetworkConfig holds network topology parameters for
+                  a site.
+                properties:
+                  managementCIDR:
+                    description: ManagementCIDR is the out-of-band management network
+                      (BMC access).
+                    type: string
+                  provisioningCIDR:
+                    description: ProvisioningCIDR is the network reachable by workers
+                      at PXE boot time.
+                    type: string
+                required:
+                - managementCIDR
+                - provisioningCIDR
+                type: object
+              oidc:
+                description: SiteOIDCConfig holds OIDC parameters injected into each
+                  TenantControlPlane kube-apiserver.
+                properties:
+                  clientID:
+                    description: ClientID is the OIDC client ID (--oidc-client-id).
+                    type: string
+                  groupsClaim:
+                    default: groups
+                    description: GroupsClaim is the JWT claim used as Kubernetes groups
+                      (--oidc-groups-claim).
+                    type: string
+                  issuerURL:
+                    description: IssuerURL is the OIDC issuer URL (--oidc-issuer-url).
+                    type: string
+                  usernameClaim:
+                    default: email
+                    description: UsernameClaim is the JWT claim used as the Kubernetes
+                      username (--oidc-username-claim).
+                    type: string
+                required:
+                - clientID
+                - groupsClaim
+                - issuerURL
+                - usernameClaim
+                type: object
+            required:
+            - cilium
+            - dns
+            - netbox
+            - network
+            - oidc
+            type: object
+          status:
+            description: SiteConfigStatus reflects validation results and machine
+              availability synced from Netbox.
+            properties:
+              conditions:
+                items:
+                  description: Condition contains details for one aspect of the current
+                    state of this API Resource.
+                  properties:
+                    lastTransitionTime:
+                      description: |-
+                        lastTransitionTime is the last time the condition transitioned from one status to another.
+                        This should be when the underlying condition changed.  If that is not known, then using the time when the API field changed is acceptable.
+                      format: date-time
+                      type: string
+                    message:
+                      description: |-
+                        message is a human readable message indicating details about the transition.
+                        This may be an empty string.
+                      maxLength: 32768
+                      type: string
+                    observedGeneration:
+                      description: |-
+                        observedGeneration represents the .metadata.generation that the condition was set based upon.
+                        For instance, if .metadata.generation is currently 12, but the .status.conditions[x].observedGeneration is 9, the condition is out of date
+                        with respect to the current state of the instance.
+                      format: int64
+                      minimum: 0
+                      type: integer
+                    reason:
+                      description: |-
+                        reason contains a programmatic identifier indicating the reason for the condition's last transition.
+                        Producers of specific condition types may define expected values and meanings for this field,
+                        and whether the values are considered a guaranteed API.
+                        The value should be a CamelCase string.
+                        This field may not be empty.
+                      maxLength: 1024
+                      minLength: 1
+                      pattern: ^[A-Za-z]([A-Za-z0-9_,:]*[A-Za-z0-9_])?$
+                      type: string
+                    status:
+                      description: status of the condition, one of True, False, Unknown.
+                      enum:
+                      - "True"
+                      - "False"
+                      - Unknown
+                      type: string
+                    type:
+                      description: type of condition in CamelCase or in foo.example.com/CamelCase.
+                      maxLength: 316
+                      pattern: ^([a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*/)?(([A-Za-z0-9][-A-Za-z0-9_.]*)?[A-Za-z0-9])$
+                      type: string
+                  required:
+                  - lastTransitionTime
+                  - message
+                  - reason
+                  - status
+                  - type
+                  type: object
+                type: array
+              lastMachineSync:
+                description: LastMachineSync is the timestamp of the last successful
+                  Netbox machine sync.
+                format: date-time
+                type: string
+              machineClasses:
+                description: |-
+                  MachineClasses lists available machine classes on this site, refreshed from Netbox.
+                  An empty slice (not nil) means the site was synced but has no active machines.
+                  Nil means the site has never been synced.
+                items:
+                  description: |-
+                    MachineClassSummary aggregates machine availability for one class on a site.
+                    The operator populates this from Netbox and stores it in SiteConfig.status.machineClasses.
+                  properties:
+                    availableCount:
+                      description: AvailableCount is the number of active, unassigned
+                        devices of this class on the site.
+                      type: integer
+                    characteristics:
+                      description: Characteristics summarizes hardware specs; may
+                        be empty if not available in Netbox.
+                      properties:
+                        cpuCores:
+                          type: integer
+                        ramGB:
+                          type: integer
+                        storageGB:
+                          type: integer
+                      type: object
+                    machineClass:
+                      description: MachineClass is the Netbox device model name (matches
+                        ClusterClaim.spec.machineClass).
+                      type: string
+                    tags:
+                      description: Tags are the Netbox device tags present on the
+                        devices of this class.
+                      items:
+                        type: string
+                      type: array
+                  required:
+                  - availableCount
+                  - machineClass
+                  type: object
+                type: array
+            required:
+            - machineClasses
+            type: object
+        type: object
+    served: true
+    storage: true
+    subresources:
+      status: {}

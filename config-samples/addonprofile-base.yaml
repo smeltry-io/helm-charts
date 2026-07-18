@@ -1,0 +1,18 @@
+# Minimal AddonProfile for initial testing — Cilium only.
+# kubectl apply -f addonprofile-base.yaml
+apiVersion: portal.smeltry.io/v1alpha1
+kind: AddonProfile
+metadata:
+  name: base
+  namespace: portal-system
+spec:
+  description: "Cilium CNI (bootstrap only)"
+  components:
+    - name: cilium
+      required: true
+      order: 1
+      helmRef:
+        repoURL: https://helm.cilium.io
+        chartName: cilium
+        chartVersion: "1.17.x"   # pin to the version deployed on your management cluster
+        values: {}

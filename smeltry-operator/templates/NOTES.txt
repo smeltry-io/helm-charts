@@ -1,0 +1,15 @@
+smeltry-operator has been deployed to namespace {{ .Values.namespaceName }}.
+
+Next steps:
+  1. Create the portal-system namespace:
+       kubectl create namespace portal-system
+
+  2. Apply a SiteConfig (see documentation at https://smeltry.io):
+       kubectl apply -f siteconfig.yaml
+
+  3. Apply an AddonProfile:
+       kubectl apply -f addonprofile.yaml
+
+  4. Verify the operator is running:
+       kubectl get pods -n {{ .Values.namespaceName }}
+       kubectl logs -n {{ .Values.namespaceName }} deploy/smeltry-operator --tail=50

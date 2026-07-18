@@ -1,0 +1,18 @@
+apiVersion: v2
+name: smeltry-operator
+description: Kubernetes operator for the Smeltry bare-metal self-service portal
+type: application
+version: 0.1.0
+appVersion: "latest"
+keywords:
+  - bare-metal
+  - kubernetes
+  - operator
+  - capi
+  - kamaji
+home: https://smeltry.io
+sources:
+  - https://github.com/smeltry-io/smeltry-operator
+maintainers:
+  - name: mgrzybek
+    url: https://github.com/mgrzybek

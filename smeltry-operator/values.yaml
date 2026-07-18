@@ -1,0 +1,29 @@
+image:
+  repository: ghcr.io/smeltry-io/smeltry-operator
+  tag: latest
+  pullPolicy: IfNotPresent
+
+replicaCount: 1
+
+namespaceName: smeltry-system
+
+netbox:
+  url: "https://netbox.example.com"
+  token: "REPLACE_ME"
+  pollInterval: "5m"
+
+machinecfgImage: "ghcr.io/smeltry-io/machinecfg:latest"
+
+logLevel: info
+leaderElect: true
+
+otel:
+  endpoint: ""
+
+resources:
+  requests:
+    cpu: 100m
+    memory: 64Mi
+  limits:
+    cpu: 500m
+    memory: 256Mi

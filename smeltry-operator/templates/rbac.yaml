@@ -1,0 +1,94 @@
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: smeltry-operator-clusterrole
+  labels:
+    app.kubernetes.io/name: smeltry-operator
+    app.kubernetes.io/managed-by: {{ .Release.Service }}
+rules:
+  - apiGroups: ["portal.smeltry.io"]
+    resources: ["addonprofiles", "siteconfigs"]
+    verbs: ["get", "list", "watch"]
+  - apiGroups: ["coordination.k8s.io"]
+    resources: ["leases"]
+    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+  - apiGroups: [""]
+    resources: ["namespaces"]
+    verbs: ["get", "list", "watch", "create", "update", "patch"]
+  - apiGroups: ["rbac.authorization.k8s.io"]
+    resources: ["roles", "rolebindings"]
+    verbs: ["get", "list", "watch", "create", "update", "patch"]
+  - apiGroups: ["cluster.x-k8s.io"]
+    resources: ["clusters", "machinedeployments"]
+    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: smeltry-operator-role
+  labels:
+    app.kubernetes.io/name: smeltry-operator
+    app.kubernetes.io/managed-by: {{ .Release.Service }}
+rules:
+  - apiGroups: [""]
+    resources: ["configmaps", "secrets"]
+    verbs: ["create", "get", "list", "patch", "update", "watch"]
+  - apiGroups: ["batch"]
+    resources: ["jobs"]
+    verbs: ["create", "delete", "get", "list", "patch", "update", "watch"]
+  - apiGroups: ["cluster.x-k8s.io"]
+    resources: ["clusters"]
+    verbs: ["create", "delete", "get", "list", "patch", "update", "watch"]
+  - apiGroups: ["coordination.k8s.io"]
+    resources: ["leases"]
+    verbs: ["create", "delete", "get", "list", "patch", "update", "watch"]
+  - apiGroups: ["portal.smeltry.io"]
+    resources: ["addonprofiles", "siteconfigs"]
+    verbs: ["get", "list", "watch"]
+  - apiGroups: ["portal.smeltry.io"]
+    resources: ["auditevents"]
+    verbs: ["create", "delete", "get", "list", "watch"]
+  - apiGroups: ["portal.smeltry.io"]
+    resources: ["clusterclaims", "serverclaims"]
+    verbs: ["create", "delete", "get", "list", "patch", "update", "watch"]
+  - apiGroups: ["portal.smeltry.io"]
+    resources: ["clusterclaims/finalizers", "serverclaims/finalizers"]
+    verbs: ["update"]
+  - apiGroups: ["portal.smeltry.io"]
+    resources: ["clusterclaims/status", "serverclaims/status"]
+    verbs: ["get", "patch", "update"]
+  - apiGroups: ["rbac.authorization.k8s.io"]
+    resources: ["roles"]
+    verbs: ["get", "list", "patch", "update", "watch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: smeltry-operator-clusterrolebinding
+  labels:
+    app.kubernetes.io/name: smeltry-operator
+    app.kubernetes.io/managed-by: {{ .Release.Service }}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: smeltry-operator-clusterrole
+subjects:
+  - kind: ServiceAccount
+    name: smeltry-operator
+    namespace: {{ .Values.namespaceName }}
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: smeltry-operator-rolebinding
+  labels:
+    app.kubernetes.io/name: smeltry-operator
+    app.kubernetes.io/managed-by: {{ .Release.Service }}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: smeltry-operator-role
+subjects:
+  - kind: ServiceAccount
+    name: smeltry-operator
+    namespace: {{ .Values.namespaceName }}
