@@ -1,0 +1,97 @@
+---
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  annotations:
+    controller-gen.kubebuilder.io/version: v0.21.0
+  name: auditevents.portal.smeltry.io
+spec:
+  group: portal.smeltry.io
+  names:
+    kind: AuditEvent
+    listKind: AuditEventList
+    plural: auditevents
+    shortNames:
+    - ae
+    singular: auditevent
+  scope: Namespaced
+  versions:
+  - name: v1alpha1
+    schema:
+      openAPIV3Schema:
+        description: |-
+          AuditEvent records one auditable action performed by smeltry-operator.
+          Events are immutable once created; deletion happens automatically via the
+          TTL purge controller.
+        properties:
+          apiVersion:
+            description: |-
+              APIVersion defines the versioned schema of this representation of an object.
+              Servers should convert recognized schemas to the latest internal value, and
+              may reject unrecognized values.
+              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources
+            type: string
+          kind:
+            description: |-
+              Kind is a string value representing the REST resource this object represents.
+              Servers may infer this from the endpoint the client submits requests to.
+              Cannot be updated.
+              In CamelCase.
+              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
+            type: string
+          metadata:
+            type: object
+          spec:
+            description: AuditEventSpec describes one auditable action performed by
+              smeltry-operator.
+            properties:
+              actor:
+                description: |-
+                  Actor is the identity that initiated the action. For operator-driven events
+                  this is "smeltry-operator"; for user-initiated deletions it carries the
+                  requesting user's email when available via the OIDC token.
+                type: string
+              machineID:
+                description: MachineID is the Netbox device ID (only set for MachineAllocated
+                  events).
+                type: integer
+              newPhase:
+                description: NewPhase is the phase after the transition (only set
+                  for PhaseChanged events).
+                type: string
+              oldPhase:
+                description: OldPhase is the phase before the transition (only set
+                  for PhaseChanged events).
+                type: string
+              resourceKind:
+                description: ResourceKind is the kind of the resource that triggered
+                  the event.
+                type: string
+              resourceName:
+                description: ResourceName is the name of the resource within its namespace.
+                type: string
+              timestamp:
+                description: Timestamp is when the action occurred.
+                format: date-time
+                type: string
+              ttl:
+                description: |-
+                  TTL is the duration after which this AuditEvent will be automatically
+                  deleted by the purge controller. Accepts Go duration strings (e.g. "720h").
+                  If empty, the operator's default TTL applies.
+                type: string
+              type:
+                description: Type is the category of the event (e.g. PhaseChanged,
+                  MachineAllocated).
+                type: string
+            required:
+            - resourceKind
+            - resourceName
+            - timestamp
+            - type
+            type: object
+        required:
+        - spec
+        type: object
+    served: true
+    storage: true

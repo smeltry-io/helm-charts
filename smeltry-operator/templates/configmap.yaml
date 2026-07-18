@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: smeltry-operator-config
+  namespace: {{ .Values.namespaceName }}
+  labels:
+    app.kubernetes.io/name: smeltry-operator
+    app.kubernetes.io/managed-by: {{ .Release.Service }}
+data:
+  netbox.url: {{ .Values.netbox.url | quote }}
+  otel.endpoint: {{ .Values.otel.endpoint | quote }}

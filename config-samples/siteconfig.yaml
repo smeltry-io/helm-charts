@@ -1,0 +1,24 @@
+# Fill in every <placeholder> before applying.
+# kubectl apply -f siteconfig.yaml
+apiVersion: portal.smeltry.io/v1alpha1
+kind: SiteConfig
+metadata:
+  name: <site-slug>              # e.g. paris-dc1 — must match Netbox site slug
+  namespace: portal-system
+spec:
+  netbox:
+    siteSlug: <site-slug>
+    provisioningPrefix: <provisioning-cidr>   # e.g. 10.0.1.0/24
+    ipamTags: ["smeltry"]
+  network:
+    provisioningCIDR: <provisioning-cidr>
+    managementCIDR: <management-cidr>         # e.g. 10.0.0.0/24
+  cilium:
+    l2PoolName: <cilium-l2-pool-name>         # name of the CiliumLoadBalancerIPPool
+  dns:
+    zone: <dns-zone>                          # e.g. infra.example.com
+  oidc:
+    issuerURL: https://<authentik-host>/application/o/smeltry/
+    clientID: smeltry-cli
+    usernameClaim: email
+    groupsClaim: groups

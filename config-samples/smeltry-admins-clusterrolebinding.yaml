@@ -1,0 +1,15 @@
+# Grants cluster-admin to the smeltry-admins Authentik group.
+# Apply after configuring OIDC on the management cluster kube-apiserver.
+# kubectl apply -f smeltry-admins-clusterrolebinding.yaml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: smeltry-admins
+subjects:
+  - kind: Group
+    name: smeltry-admins
+    apiGroup: rbac.authorization.k8s.io
+roleRef:
+  kind: ClusterRole
+  name: cluster-admin
+  apiGroup: rbac.authorization.k8s.io
